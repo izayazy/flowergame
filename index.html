@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<title>Responsive Flower Picking Game</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Flower Picking Game</title>
 <style>
   body {
     background-color: #ffd6e6;
@@ -15,32 +15,33 @@
     height: 100vh;
   }
   .frame {
-    width: 90vw; /* 90% of viewport width */
-    height: 90vw; /* keep it square! */
-    max-width: 600px; /* limit size on large screens */
+    width: 90vw;
+    height: 90vw;
+    max-width: 600px;
     max-height: 600px;
-    background-image: url('https://i.imgur.com/zJhhMvq.png');
-    background-size: cover;
-    background-position: center;
     border: 10px solid #d17f9d;
     position: relative;
     overflow: hidden;
+    background: url('https://i.imgur.com/fieldImage.png') center/cover;
+  }
+  .frame-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 600px; /* design size */
+    height: 600px;
+    transform-origin: top left;
   }
   .flower {
     position: absolute;
     transform-origin: center bottom;
     cursor: pointer;
-    animation-name: sway;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
-    --flip: 1;
-    --angle: 0deg;
-    transform: scaleX(var(--flip)) rotate(var(--angle));
+    animation: sway 3s ease-in-out infinite;
   }
   @keyframes sway {
-    0% { transform: scaleX(var(--flip)) translateX(-3px) rotate(calc(var(--angle) - 8deg)); }
-    50% { transform: scaleX(var(--flip)) translateX(3px) rotate(calc(var(--angle) + 8deg)); }
-    100% { transform: scaleX(var(--flip)) translateX(-3px) rotate(calc(var(--angle) - 8deg)); }
+    0% { transform: translateX(-3px) rotate(-8deg); }
+    50% { transform: translateX(3px) rotate(8deg); }
+    100% { transform: translateX(-3px) rotate(-8deg); }
   }
   .selected-flowers {
     position: absolute;
@@ -89,24 +90,28 @@
     50% { transform: scale(1.05); }
   }
   .zoom-effect {
-    animation: zoomEffect 2s ease-in-out infinite;
-    transform-origin: bottom center; /* bottom-anchored zoom */
+    animation: zoomEffect 4s ease-in-out infinite;
+    transform-origin: bottom center;
   }
 </style>
 </head>
 <body>
-  <div class="frame" id="frame"></div>
+  <div class="frame" id="frame">
+    <div class="frame-content" id="frameContent"></div>
+  </div>
 <script>
 const flowerTypes = [
-  { src: 'https://i.imgur.com/u5ztWRH.png', size: 20, spacing: 30 },
-  { src: 'https://i.imgur.com/AzPXrqq.png', size: 20, spacing: 30 },
-  { src: 'https://i.imgur.com/tiZLuYq.png', size: 20, spacing: 30 },
-  { src: 'https://i.imgur.com/q9JVHE6.png', size: 20, spacing: 30 },
-  { src: 'https://i.imgur.com/ewyQ9qu.png', size: 18, spacing: 30 },
-  { src: 'https://i.imgur.com/QzGRaap.png', size: 20, spacing: 30 },
+  { src: 'https://i.imgur.com/abc123.png', size: 20, spacing: 30 },
+  { src: 'https://i.imgur.com/def456.png', size: 20, spacing: 30 },
+  { src: 'https://i.imgur.com/ghi789.png', size: 20, spacing: 30 },
+  { src: 'https://i.imgur.com/jkl012.png', size: 20, spacing: 30 },
+  { src: 'https://i.imgur.com/mno345.png', size: 18, spacing: 30 },
+  { src: 'https://i.imgur.com/pqr678.png', size: 20, spacing: 30 },
 ];
+const vaseUrl = 'https://i.imgur.com/vase123.png';
 
 const frame = document.getElementById('frame');
+const frameContent = document.getElementById('frameContent');
 const placedFlowers = [];
 const clickedFlowers = [];
 const maxAttempts = 1000;
@@ -125,9 +130,7 @@ for (let r = 0; r < rows; r++) {
 gridCells.sort(() => Math.random() - 0.5);
 
 function isOverlapping(x, y, spacing) {
-  return placedFlowers.some(f => {
-    return Math.abs(f.x - x) < spacing && Math.abs(f.y - y) < spacing;
-  });
+  return placedFlowers.some(f => Math.abs(f.x - x) < spacing && Math.abs(f.y - y) < spacing);
 }
 
 function handleClick(event, src) {
@@ -139,7 +142,7 @@ function handleClick(event, src) {
 }
 
 function showSelectedFlowers() {
-  frame.innerHTML = '';
+  frameContent.innerHTML = '';
   frame.style.backgroundImage = 'none';
   frame.style.backgroundColor = '#bddfeb';
 
@@ -147,8 +150,8 @@ function showSelectedFlowers() {
   container.style.position = 'relative';
   container.style.width = '100%';
   container.style.height = '100%';
-  container.style.transformOrigin = 'bottom center'; 
-  frame.appendChild(container);
+  container.style.transformOrigin = 'bottom center';
+  frameContent.appendChild(container);
 
   const row = document.createElement('div');
   row.classList.add('selected-flowers');
@@ -159,14 +162,12 @@ function showSelectedFlowers() {
     img.src = src;
     img.draggable = true;
     img.id = `flower-${index}`;
-    img.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('text/plain', img.id);
-    });
+    img.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', img.id));
     row.appendChild(img);
   });
 
   const vase = document.createElement('img');
-  vase.src = 'https://i.imgur.com/S6XGOhD.png';
+  vase.src = vaseUrl;
   vase.classList.add('vase');
   container.appendChild(vase);
 
@@ -185,7 +186,7 @@ function showSelectedFlowers() {
 
   let droppedCount = 0;
 
-  positions.forEach((pos, i) => {
+  positions.forEach((pos) => {
     const box = document.createElement('div');
     box.classList.add('drop-box');
     box.style.left = `${pos.x}px`;
@@ -213,7 +214,7 @@ function showSelectedFlowers() {
 
         droppedCount++;
         if (droppedCount === 10) {
-          container.classList.add('zoom-effect'); 
+          container.classList.add('zoom-effect');
         }
       }
     });
@@ -243,19 +244,18 @@ flowerTypes.forEach(({ src, size, spacing }) => {
         img.classList.add('flower');
         img.style.width = `${size}px`;
         img.style.height = 'auto';
+        img.style.left = `${x}px`;
+        img.style.top = `${y}px`;
 
         const flip = Math.random() < 0.5 ? -1 : 1;
         const angleOffset = (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * 11);
-
-        img.style.left = `${x}px`;
-        img.style.top = `${y}px`;
         img.style.setProperty('--flip', flip);
         img.style.setProperty('--angle', `${angleOffset}deg`);
         img.style.animationDuration = `${2 + Math.random() * 2}s`;
 
         img.addEventListener('click', (event) => handleClick(event, src));
 
-        frame.appendChild(img);
+        frameContent.appendChild(img);
         placedFlowers.push({ x, y });
         placed++;
       }
@@ -263,6 +263,14 @@ flowerTypes.forEach(({ src, size, spacing }) => {
     }
   });
 });
+
+// Initial scaling
+function scaleContent() {
+  const scale = frame.clientWidth / 600;
+  frameContent.style.transform = `scale(${scale})`;
+}
+scaleContent();
+window.addEventListener('resize', scaleContent);
 </script>
 </body>
 </html>
