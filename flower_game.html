@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flower Picking Game</title>
+<style>
+  body {
+    background-color: #ffd6e6;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .frame {
+    width: 600px;
+    height: 600px;
+    background-image: url('https://i.imgur.com/zJhhMvq.png');
+    background-size: cover;
+    background-position: center;
+    border: 10px solid #d17f9d;
+    position: relative;
+    overflow: hidden;
+  }
+  .flower {
+    position: absolute;
+    transform-origin: center bottom;
+    cursor: pointer;
+    animation-name: sway;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    --flip: 1;
+    --angle: 0deg;
+    transform: scaleX(var(--flip)) rotate(var(--angle));
+  }
+  @keyframes sway {
+    0% { transform: scaleX(var(--flip)) translateX(-3px) rotate(calc(var(--angle) - 8deg)); }
+    50% { transform: scaleX(var(--flip)) translateX(3px) rotate(calc(var(--angle) + 8deg)); }
+    100% { transform: scaleX(var(--flip)) translateX(-3px) rotate(calc(var(--angle) - 8deg)); }
+  }
+  .selected-flowers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    background-color: #bddfeb;
+    z-index: 1;
+  }
+  .selected-flowers img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border: 2px solid #d17f9d;
+    background: #bddfeb;
+    padding: 5px;
+    box-sizing: border-box;
+  }
+  .drop-box {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: 2px dashed #d17f9d;
+    background-color: transparent;
+    border-radius: 50%;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .vase {
+    position: absolute;
+    top: 100px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 100px);
+    object-fit: contain;
+    z-index: 1;
+  }
+  @keyframes zoomEffect {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .zoom-effect {
+    animation: zoomEffect 4s ease-in-out infinite;
+    transform-origin: bottom center; /* bottom-anchored zoom */
+  }
+</style>
+</head>
+<body>
+  <div class="frame" id="frame"></div>
+<script>
+const flowerTypes = [
+  { src: 'https://i.imgur.com/u5ztWRH.png', size: 20, spacing: 30 },
+  { src: 'https://i.imgur.com/AzPXrqq.png', size: 20, spacing: 30 },
+  { src: 'https://i.imgur.com/tiZLuYq.png', size: 20, spacing: 30 },
+  { src: 'https://i.imgur.com/q9JVHE6.png', size: 20, spacing: 30 },
+  { src: 'https://i.imgur.com/ewyQ9qu.png', size: 18, spacing: 30 },
+  { src: 'https://i.imgur.com/QzGRaap.png', size: 20, spacing: 30 },
+];
+
+const frame = document.getElementById('frame');
+const placedFlowers = [];
+const clickedFlowers = [];
+const maxAttempts = 1000;
+
+const rows = 5;
+const cols = 6;
+const cellWidth = 600 / cols;
+const cellHeight = 300 / rows;
+
+const gridCells = [];
+for (let r = 0; r < rows; r++) {
+  for (let c = 0; c < cols; c++) {
+    gridCells.push({ row: r, col: c });
+  }
+}
+gridCells.sort(() => Math.random() - 0.5);
+
+function isOverlapping(x, y, spacing) {
+  return placedFlowers.some(f => {
+    return Math.abs(f.x - x) < spacing && Math.abs(f.y - y) < spacing;
+  });
+}
+
+function handleClick(event, src) {
+  event.target.remove();
+  clickedFlowers.push(src);
+  if (clickedFlowers.length === 10) {
+    showSelectedFlowers();
+  }
+}
+
+function showSelectedFlowers() {
+  frame.innerHTML = '';
+  frame.style.backgroundImage = 'none';
+  frame.style.backgroundColor = '#bddfeb';
+
+  const container = document.createElement('div');
+  container.style.position = 'relative';
+  container.style.width = '100%';
+  container.style.height = '100%';
+  container.style.transformOrigin = 'bottom center'; 
+  frame.appendChild(container);
+
+  const row = document.createElement('div');
+  row.classList.add('selected-flowers');
+  container.appendChild(row);
+
+  clickedFlowers.forEach((src, index) => {
+    const img = document.createElement('img');
+    img.src = src;
+    img.draggable = true;
+    img.id = `flower-${index}`;
+    img.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', img.id);
+    });
+    row.appendChild(img);
+  });
+
+  const vase = document.createElement('img');
+  vase.src = 'https://i.imgur.com/S6XGOhD.png';
+  vase.classList.add('vase');
+  container.appendChild(vase);
+
+  const positions = [
+    { x: 265, y: 200, angle: 10 },
+    { x: 175, y: 130, angle: 35 },
+    { x: 250, y: 155, angle: 15 },
+    { x: 330, y: 145, angle: -5 },
+    { x: 295, y: 255, angle: 0 },
+    { x: 370, y: 180, angle: -30 },
+    { x: 365, y: 235, angle: -60 },
+    { x: 405, y: 255, angle: -85 },
+    { x: 215, y: 205, angle: 30 },
+    { x: 190, y: 250, angle: 80 }
+  ];
+
+  let droppedCount = 0;
+
+  positions.forEach((pos, i) => {
+    const box = document.createElement('div');
+    box.classList.add('drop-box');
+    box.style.left = `${pos.x}px`;
+    box.style.top = `${pos.y}px`;
+
+    box.addEventListener('dragover', (e) => e.preventDefault());
+    box.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const id = e.dataTransfer.getData('text/plain');
+      const dragged = document.getElementById(id);
+      if (dragged) {
+        dragged.remove();
+        box.style.border = 'none';
+        box.style.background = 'transparent';
+
+        const clone = dragged.cloneNode(true);
+        clone.style.width = '90%';
+        clone.style.height = '90%';
+        clone.style.objectFit = 'contain';
+        clone.style.borderRadius = '50%';
+        clone.draggable = false;
+        const horizontalFlip = Math.random() < 0.5 ? -1 : 1;
+        clone.style.transform = `rotate(${-pos.angle}deg) scaleX(${horizontalFlip})`;
+        box.appendChild(clone);
+
+        droppedCount++;
+        if (droppedCount === 10) {
+          container.classList.add('zoom-effect'); 
+        }
+      }
+    });
+    container.appendChild(box);
+  });
+}
+
+// Generate flowers
+flowerTypes.forEach(({ src, size, spacing }) => {
+  const bundles = [2, 2, 3, 4, 4];
+  bundles.sort(() => Math.random() - 0.5);
+
+  bundles.forEach(bundleSize => {
+    const { row, col } = gridCells.pop();
+    const startX = col * cellWidth;
+    const startY = 300 + row * cellHeight;
+
+    let placed = 0;
+    let attempts = 0;
+    while (placed < bundleSize && attempts < maxAttempts) {
+      const x = startX + Math.random() * (cellWidth - size);
+      const y = startY + Math.random() * (cellHeight - size);
+
+      if (!isOverlapping(x, y, spacing * 0.8)) {
+        const img = document.createElement('img');
+        img.src = src;
+        img.classList.add('flower');
+        img.style.width = `${size}px`;
+        img.style.height = 'auto';
+
+        const flip = Math.random() < 0.5 ? -1 : 1;
+        const angleOffset = (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * 11);
+
+        img.style.left = `${x}px`;
+        img.style.top = `${y}px`;
+        img.style.setProperty('--flip', flip);
+        img.style.setProperty('--angle', `${angleOffset}deg`);
+        img.style.animationDuration = `${2 + Math.random() * 2}s`;
+
+        img.addEventListener('click', (event) => handleClick(event, src));
+
+        frame.appendChild(img);
+        placedFlowers.push({ x, y });
+        placed++;
+      }
+      attempts++;
+    }
+  });
+});
+</script>
+</body>
+</html>
